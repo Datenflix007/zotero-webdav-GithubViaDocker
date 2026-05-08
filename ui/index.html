@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MyLiteratureVault</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="mark"></div>
+      <div>
+        <strong>MyLiteratureVault</strong>
+        <span id="repoName">Repository</span>
+      </div>
+      <button id="sidebarToggle" title="Sidebar einklappen">‹</button>
+    </div>
+    <nav>
+      <button class="nav active" data-view="graph">Graph</button>
+      <button class="nav" data-view="issues">Issues</button>
+      <button class="nav" data-view="pulls">Pull Requests</button>
+    </nav>
+    <div class="sidebar-footer">
+      <button id="pullBtn">Pull</button>
+      <button id="settingsBtn">Settings</button>
+    </div>
+  </aside>
+
+  <main>
+    <header class="topbar">
+      <div>
+        <h1 id="viewTitle">Source Control Graph</h1>
+        <p id="statusLine">Lade Status...</p>
+      </div>
+      <div class="badges">
+        <span id="branchBadge">branch</span>
+        <span id="syncBadge">sync</span>
+      </div>
+    </header>
+
+    <section id="graphView" class="view active">
+      <div class="panel graph-panel">
+        <div class="panel-head">
+          <h2>Commit Verlauf</h2>
+          <button id="refreshGraph">Refresh</button>
+        </div>
+        <div id="commitGraph" class="commit-graph"></div>
+      </div>
+    </section>
+
+    <section id="issuesView" class="view">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Issues</h2>
+          <button id="refreshIssues">Refresh</button>
+        </div>
+        <div id="issuesList" class="cards"></div>
+      </div>
+    </section>
+
+    <section id="pullsView" class="view">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Pull Requests</h2>
+          <button id="refreshPulls">Refresh</button>
+        </div>
+        <div id="pullsList" class="cards"></div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="editDialog">
+    <form method="dialog" class="dialog-body">
+      <h2 id="editTitle">Bearbeiten</h2>
+      <input type="hidden" id="editType">
+      <input type="hidden" id="editNumber">
+      <label>Titel<input id="editItemTitle"></label>
+      <label>Text<textarea id="editItemBody" rows="8"></textarea></label>
+      <label>Status
+        <select id="editItemState">
+          <option value="open">open</option>
+          <option value="closed">closed</option>
+        </select>
+      </label>
+      <div class="dialog-actions">
+        <button value="cancel">Abbrechen</button>
+        <button id="saveItemBtn" value="default">Speichern</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="settingsDialog">
+    <form method="dialog" class="dialog-body">
+      <h2>Einstellungen</h2>
+      <label>GitHub Name<input id="githubUsername" autocomplete="username"></label>
+      <label>GitHub Email<input id="githubEmail" autocomplete="email"></label>
+      <label>GitHub Token<input id="githubToken" type="password" placeholder="leer lassen = behalten"></label>
+      <label>WebDAV URL<input id="webdavUrl"></label>
+      <label>WebDAV Benutzer<input id="webdavUsername"></label>
+      <label>WebDAV Passwort<input id="webdavPassword" type="password"></label>
+      <div class="hint" id="tokenHint"></div>
+      <div class="dialog-actions">
+        <button value="cancel">Abbrechen</button>
+        <button id="saveSettingsBtn" value="default">Speichern</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>

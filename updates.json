@@ -1,0 +1,17 @@
+{
+  "addons": {
+    "myliteraturevault@datenflix007.github": {
+      "updates": [
+        {
+          "version": "0.1.2",
+          "update_link": "https://github.com/Datenflix007/MyLiteratureVault/releases/download/v0.1.2/myliteraturevault-zotero.xpi",
+          "applications": {
+            "zotero": {
+              "strict_min_version": "9.0"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
