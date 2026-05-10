@@ -1,4 +1,5 @@
 # MyLiteratureVault
+<img width="1691" height="1278" alt="image" src="https://github.com/user-attachments/assets/8a12c5e2-8550-4cde-a723-f1eb6a4f991f" />
 
 Lokaler WebDAV-Speicher fuer Zotero mit automatischer Synchronisation in dieses GitHub-Repository und einer lokalen Browser-UI zur Verwaltung.
 
