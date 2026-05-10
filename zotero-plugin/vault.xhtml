@@ -1,16 +1,125 @@
 <?xml version="1.0"?>
-<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<?xml-stylesheet href="ui/styles.css" type="text/css"?>
 <window
   xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  xmlns:html="http://www.w3.org/1999/xhtml"
   title="MyLiteratureVault"
   width="1200"
   height="800"
-  orient="vertical"
-  persist="width height screenX screenY">
-  <browser
-    id="myliteraturevault-browser"
-    src="http://localhost:8765/"
-    type="content"
-    flex="1"
-    disablehistory="true" />
+  persist="width height screenX screenY"
+  style="display:flex; flex-direction:column; margin:0; padding:0;">
+
+  <html:div id="app" style="flex:1; min-height:0; overflow:hidden;">
+
+    <html:aside class="sidebar">
+      <html:div class="brand">
+        <html:div class="mark"></html:div>
+        <html:div>
+          <html:strong>MyLiteratureVault</html:strong>
+          <html:span id="repoName">Repository</html:span>
+        </html:div>
+        <html:button id="sidebarToggle" title="Sidebar einklappen">&#x2039;</html:button>
+      </html:div>
+      <html:nav>
+        <html:button class="nav active" data-view="graph">Graph</html:button>
+        <html:button class="nav" data-view="issues">Issues</html:button>
+        <html:button class="nav" data-view="pulls">Pull Requests</html:button>
+      </html:nav>
+      <html:div class="sidebar-footer">
+        <html:button id="pullBtn">Pull</html:button>
+        <html:button id="settingsBtn">Settings</html:button>
+      </html:div>
+    </html:aside>
+
+    <html:main>
+      <html:header class="topbar">
+        <html:div>
+          <html:h1 id="viewTitle">Source Control Graph</html:h1>
+          <html:p id="statusLine">Lade Status...</html:p>
+        </html:div>
+        <html:div class="badges">
+          <html:span id="branchBadge">branch</html:span>
+          <html:span id="syncBadge">sync</html:span>
+        </html:div>
+      </html:header>
+
+      <html:section id="graphView" class="view active">
+        <html:div class="panel graph-panel">
+          <html:div class="panel-head">
+            <html:h2>Commit Verlauf</html:h2>
+            <html:button id="refreshGraph">Refresh</html:button>
+          </html:div>
+          <html:div id="commitGraph" class="commit-graph"></html:div>
+        </html:div>
+      </html:section>
+
+      <html:section id="issuesView" class="view">
+        <html:div class="panel">
+          <html:div class="panel-head">
+            <html:h2>Issues</html:h2>
+            <html:button id="refreshIssues">Refresh</html:button>
+          </html:div>
+          <html:div id="issuesList" class="cards"></html:div>
+        </html:div>
+      </html:section>
+
+      <html:section id="pullsView" class="view">
+        <html:div class="panel">
+          <html:div class="panel-head">
+            <html:h2>Pull Requests</html:h2>
+            <html:button id="refreshPulls">Refresh</html:button>
+          </html:div>
+          <html:div id="pullsList" class="cards"></html:div>
+        </html:div>
+      </html:section>
+    </html:main>
+
+    <html:dialog id="editDialog">
+      <html:form method="dialog" class="dialog-body">
+        <html:h2 id="editTitle">Bearbeiten</html:h2>
+        <html:input type="hidden" id="editType"/>
+        <html:input type="hidden" id="editNumber"/>
+        <html:label>Titel<html:input id="editItemTitle"/></html:label>
+        <html:label>Text<html:textarea id="editItemBody" rows="8"></html:textarea></html:label>
+        <html:label>Status
+          <html:select id="editItemState">
+            <html:option value="open">open</html:option>
+            <html:option value="closed">closed</html:option>
+          </html:select>
+        </html:label>
+        <html:div class="dialog-actions">
+          <html:button value="cancel">Abbrechen</html:button>
+          <html:button id="saveItemBtn" value="default">Speichern</html:button>
+        </html:div>
+      </html:form>
+    </html:dialog>
+
+    <html:dialog id="settingsDialog">
+      <html:form method="dialog" class="dialog-body">
+        <html:h2>Einstellungen</html:h2>
+        <html:label>GitHub Name<html:input id="githubUsername" autocomplete="username"/></html:label>
+        <html:label>GitHub Email<html:input id="githubEmail" autocomplete="email"/></html:label>
+        <html:label>GitHub Token<html:input id="githubToken" type="password" placeholder="leer lassen = behalten"/></html:label>
+        <html:label>WebDAV URL<html:input id="webdavUrl"/></html:label>
+        <html:label>WebDAV Benutzer<html:input id="webdavUsername"/></html:label>
+        <html:label>WebDAV Passwort<html:input id="webdavPassword" type="password"/></html:label>
+        <html:div class="hint" id="tokenHint"></html:div>
+        <html:div class="dialog-actions">
+          <html:button value="cancel">Abbrechen</html:button>
+          <html:button id="saveSettingsBtn" value="default">Speichern</html:button>
+        </html:div>
+      </html:form>
+    </html:dialog>
+
+    <html:div id="toast"></html:div>
+
+  </html:div>
+
+  <script type="application/javascript">
+    Services.scriptloader.loadSubScript(
+      __URI__.replace("vault.xhtml", "") + "ui/app.js",
+      this
+    );
+  </script>
+
 </window>

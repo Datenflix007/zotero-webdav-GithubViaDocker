@@ -21,6 +21,13 @@ New-Item -ItemType Directory -Force -Path $stagingDir | Out-Null
     Copy-Item -LiteralPath (Join-Path $PluginDir $_) -Destination $stagingDir -Force
 }
 
+$uiSrc = Join-Path $ScriptDir "ui"
+$uiDst = Join-Path $stagingDir "ui"
+New-Item -ItemType Directory -Force -Path $uiDst | Out-Null
+@("index.html", "styles.css", "app.js") | ForEach-Object {
+    Copy-Item -LiteralPath (Join-Path $uiSrc $_) -Destination $uiDst -Force
+}
+
 Compress-Archive -Path (Join-Path $stagingDir "*") -DestinationPath $ZipPath -Force
 Move-Item $ZipPath $XpiPath -Force
 Remove-Item $stagingDir -Recurse -Force

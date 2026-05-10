@@ -14,18 +14,22 @@
         <strong>MyLiteratureVault</strong>
         <span id="repoName">Repository</span>
       </div>
-      <button id="sidebarToggle" title="Sidebar einklappen">‹</button>
+      <button id="sidebarToggle" title="Sidebar einklappen">←</button>
     </div>
     <nav>
       <button class="nav active" data-view="graph">Graph</button>
-      <button class="nav" data-view="issues">Issues</button>
+      <button class="nav" data-view="issues">TODOs</button>
       <button class="nav" data-view="pulls">Pull Requests</button>
     </nav>
     <div class="sidebar-footer">
       <button id="pullBtn">Pull</button>
+      <button id="commitBtn">Commit</button>
       <button id="settingsBtn">Settings</button>
+      <button id="stopServerBtn" class="btn-danger">Server stoppen</button>
     </div>
   </aside>
+
+  <div class="resize-handle" id="resizeHandle"></div>
 
   <main>
     <header class="topbar">
@@ -52,8 +56,14 @@
     <section id="issuesView" class="view">
       <div class="panel">
         <div class="panel-head">
-          <h2>Issues</h2>
-          <button id="refreshIssues">Refresh</button>
+          <h2>TODOs</h2>
+          <div class="panel-head-right">
+            <label class="filter-label">
+              <input type="checkbox" id="showClosedTodos"> Erledigte anzeigen
+            </label>
+            <button id="newTodoBtn">+ Neues TODO</button>
+            <button id="refreshIssues">Refresh</button>
+          </div>
         </div>
         <div id="issuesList" class="cards"></div>
       </div>
@@ -70,6 +80,39 @@
     </section>
   </main>
 
+  <dialog id="newTodoDialog">
+    <div class="dialog-body">
+      <h2>Neues TODO</h2>
+      <label>Titel <span class="required">*</span>
+        <input id="newTodoTitle" placeholder="Was ist zu tun?">
+      </label>
+      <label>Beschreibung
+        <textarea id="newTodoBody" rows="5" placeholder="Details, Links, Notizen..."></textarea>
+      </label>
+      <div class="dialog-actions">
+        <button type="button" id="newTodoCancelBtn">Abbrechen</button>
+        <button type="button" id="newTodoSaveBtn">Erstellen</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="commitDialog">
+    <form method="dialog" class="dialog-body">
+      <h2>Manueller Commit</h2>
+      <label>Commit-Nachricht
+        <textarea id="commitMessage" rows="3"></textarea>
+      </label>
+      <label class="label-inline">
+        <input type="checkbox" id="commitPush" checked>
+        Auch zu GitHub pushen
+      </label>
+      <div class="dialog-actions">
+        <button type="button" id="commitCancelBtn">Abbrechen</button>
+        <button type="button" id="commitSaveBtn">Committen</button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog id="editDialog">
     <form method="dialog" class="dialog-body">
       <h2 id="editTitle">Bearbeiten</h2>
@@ -79,8 +122,8 @@
       <label>Text<textarea id="editItemBody" rows="8"></textarea></label>
       <label>Status
         <select id="editItemState">
-          <option value="open">open</option>
-          <option value="closed">closed</option>
+          <option value="open">Offen</option>
+          <option value="closed">Erledigt</option>
         </select>
       </label>
       <div class="dialog-actions">

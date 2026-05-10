@@ -51,20 +51,20 @@ function Get-RepoInfo {
 }
 
 function Invoke-Git {
-    param([string[]]$Args)
-    $output = & git @Args 2>&1
+    param([string[]]$GitArgs)
+    $output = & git @GitArgs 2>&1
     return @{ exitCode = $LASTEXITCODE; output = ($output -join "`n") }
 }
 
 function Invoke-GitRemote {
-    param([string[]]$Args)
+    param([string[]]$GitArgs)
     $env = Import-EnvFile
     if ($env["GITHUB_TOKEN"]) {
         $basicAuth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("x-access-token:$($env["GITHUB_TOKEN"])"))
-        $output = & git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $basicAuth" @Args 2>&1
+        $output = & git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $basicAuth" @GitArgs 2>&1
     }
     else {
-        $output = & git @Args 2>&1
+        $output = & git @GitArgs 2>&1
     }
     return @{ exitCode = $LASTEXITCODE; output = ($output -join "`n") }
 }
@@ -97,6 +97,9 @@ function Send-Response {
     $bytes = [Text.Encoding]::UTF8.GetBytes($Body)
     $Context.Response.StatusCode = $Status
     $Context.Response.ContentType = "$ContentType; charset=utf-8"
+    $Context.Response.Headers.Add("Access-Control-Allow-Origin", "*")
+    $Context.Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS")
+    $Context.Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type")
     $Context.Response.ContentLength64 = $bytes.Length
     $Context.Response.OutputStream.Write($bytes, 0, $bytes.Length)
     $Context.Response.Close()
@@ -159,6 +162,7 @@ function Handle-Api {
     param($Context, [string]$Path)
     try {
         $method = $Context.Request.HttpMethod
+        if ($method -eq "OPTIONS") { Send-Response $Context 204 "" "text/plain"; return }
         if ($Path -eq "/api/status") { Send-Json $Context (Get-Status); return }
         if ($Path -eq "/api/log") { Send-Json $Context (Get-Log); return }
         if ($Path -eq "/api/pull" -and $method -eq "POST") { Send-Json $Context (Pull-RemoteUpdates); return }
@@ -189,9 +193,60 @@ function Handle-Api {
             Send-Json $Context @{ ok = $true }
             return
         }
-        if ($Path -eq "/api/issues") {
-            $items = Invoke-GitHub "GET" "/issues?state=all&per_page=50"
+        if ($Path -eq "/api/sync-log") {
+            $logFile = Join-Path $ScriptDir ".sync-log.json"
+            if (Test-Path $logFile) {
+                try {
+                    $entries = Get-Content $logFile -Raw | ConvertFrom-Json
+                    Send-Json $Context @($entries)
+                } catch {
+                    Send-Json $Context @()
+                }
+            } else {
+                Send-Json $Context @()
+            }
+            return
+        }
+        if ($Path -eq "/api/commit" -and $method -eq "POST") {
+            $body = Read-JsonBody $Context.Request
+            $msg = if ("$($body.message)".Trim()) { "$($body.message)".Trim() } else { "Manueller Sync [$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')]" }
+            git add -A | Out-Null
+            $diffCheck = Invoke-Git @("diff", "--cached", "--quiet")
+            if ($diffCheck.exitCode -eq 0) {
+                Send-Json $Context @{ ok = $false; error = "Keine Aenderungen zum Committen vorhanden." } 400
+                return
+            }
+            $commit = Invoke-Git @("commit", "-m", $msg)
+            if ($commit.exitCode -ne 0) {
+                Send-Json $Context @{ ok = $false; error = $commit.output } 400
+                return
+            }
+            $pushed = $false
+            if ($body.push -eq $true) {
+                $pushResult = Invoke-GitRemote @("push")
+                if ($pushResult.exitCode -ne 0) {
+                    $pushResult = Invoke-GitRemote @("push", "-u", "origin", "HEAD")
+                }
+                $pushed = ($pushResult.exitCode -eq 0)
+            }
+            Send-Json $Context @{ ok = $true; message = $msg; pushed = $pushed }
+            return
+        }
+        if ($Path -eq "/api/shutdown" -and $method -eq "POST") {
+            Send-Json $Context @{ ok = $true }
+            $script:listener.Stop()
+            return
+        }
+        if ($Path -eq "/api/issues" -and $method -eq "GET") {
+            $items = Invoke-GitHub "GET" "/issues?state=all&per_page=100"
             Send-Json $Context @($items | Where-Object { -not $_.pull_request })
+            return
+        }
+        if ($Path -eq "/api/issues" -and $method -eq "POST") {
+            $body = Read-JsonBody $Context.Request
+            $payload = @{ title = "$($body.title)" }
+            if (-not [string]::IsNullOrWhiteSpace("$($body.body)")) { $payload["body"] = "$($body.body)" }
+            Send-Json $Context (Invoke-GitHub "POST" "/issues" $payload)
             return
         }
         if ($Path -eq "/api/pulls") {
@@ -224,20 +279,24 @@ function Serve-File {
     Send-Response $Context 200 (Get-Content -Raw $file) $type
 }
 
-$listener = New-Object Net.HttpListener
+$script:listener = New-Object Net.HttpListener
 $prefix = "http://localhost:$Port/"
-$listener.Prefixes.Add($prefix)
-$listener.Start()
+$script:listener.Prefixes.Add($prefix)
+$script:listener.Start()
 Write-Host "MyLiteratureVault UI laeuft: $prefix" -ForegroundColor Green
 if ($OpenBrowser) { Start-Process $prefix }
 
 try {
-    while ($listener.IsListening) {
-        $context = $listener.GetContext()
-        $path = $context.Request.Url.AbsolutePath
-        if ($path.StartsWith("/api/")) { Handle-Api $context $path } else { Serve-File $context $path }
+    while ($script:listener.IsListening) {
+        try {
+            $context = $script:listener.GetContext()
+            $path = $context.Request.Url.AbsolutePath
+            if ($path.StartsWith("/api/")) { Handle-Api $context $path } else { Serve-File $context $path }
+        } catch [System.Net.HttpListenerException] {
+            break
+        }
     }
 }
 finally {
-    $listener.Stop()
+    if ($script:listener.IsListening) { $script:listener.Stop() }
 }

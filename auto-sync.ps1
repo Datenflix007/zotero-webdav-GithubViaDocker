@@ -10,9 +10,33 @@ $ErrorActionPreference = "Continue"
 $ScriptDir = Split-Path -Parent -Path $MyInvocation.MyCommand.Definition
 Set-Location $ScriptDir
 
+$script:LogFile = Join-Path $ScriptDir ".sync-log.json"
+
 function Write-Log($Text, $Color = "Gray") {
     $timestamp = Get-Date -Format "HH:mm:ss"
     Write-Host "[$timestamp] $Text" -ForegroundColor $Color
+
+    $level = switch ($Color) {
+        "Green"  { "ok" }
+        "Yellow" { "warn" }
+        "Red"    { "error" }
+        "Cyan"   { "info" }
+        default  { "info" }
+    }
+
+    try {
+        $entries = @()
+        if (Test-Path $script:LogFile) {
+            $raw = Get-Content $script:LogFile -Raw -ErrorAction SilentlyContinue
+            if ($raw) {
+                $parsed = $raw | ConvertFrom-Json
+                $entries = @($parsed)
+            }
+        }
+        $entries += [PSCustomObject]@{ ts = (Get-Date -Format "o"); level = $level; text = $Text }
+        if ($entries.Count -gt 300) { $entries = $entries[($entries.Count - 300)..($entries.Count - 1)] }
+        $entries | ConvertTo-Json -Depth 5 | Out-File $script:LogFile -Encoding UTF8 -Force
+    } catch { }
 }
 
 function Import-LocalEnv {
@@ -76,13 +100,13 @@ function Push-CurrentBranch {
 }
 
 function Invoke-GitRemote {
-    param([string[]]$Args)
+    param([string[]]$GitArgs)
     if ($env:GITHUB_TOKEN) {
         $basicAuth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("x-access-token:$($env:GITHUB_TOKEN)"))
-        & git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $basicAuth" @Args
+        & git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $basicAuth" @GitArgs
     }
     else {
-        & git @Args
+        & git @GitArgs
     }
 }
 
